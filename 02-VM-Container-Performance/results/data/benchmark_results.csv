@@ -1,0 +1,4 @@
+Metric,VM,Container
+CPU Events/sec,3263.31,3392.10
+Network Gbit/sec,63.6,64.8
+Memory MiB/sec,,26877.05
