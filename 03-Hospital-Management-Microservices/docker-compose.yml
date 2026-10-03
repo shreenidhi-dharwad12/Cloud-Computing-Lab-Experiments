@@ -1,0 +1,29 @@
+services:
+
+  patient-service:
+    build: ./patient-service
+    container_name: patient-service
+    ports:
+      - "5001:5001"
+    networks:
+      - hospital-network
+
+  doctor-service:
+    build: ./doctor-service
+    container_name: doctor-service
+    ports:
+      - "5002:5002"
+    networks:
+      - hospital-network
+
+  appointment-service:
+    build: ./appointment-service
+    container_name: appointment-service
+    ports:
+      - "5003:5003"
+    networks:
+      - hospital-network
+
+networks:
+  hospital-network:
+    driver: bridge
