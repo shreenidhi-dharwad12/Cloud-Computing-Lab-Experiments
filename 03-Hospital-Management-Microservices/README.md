@@ -528,7 +528,7 @@ Overall, the project demonstrates microservice decomposition, containerization, 
 
 ## Author
 
-**Name:** Shreenidhi Ashok
+**Name:** Shreenidhi Dharwad
 
 **Course:** Cloud Computing
 
