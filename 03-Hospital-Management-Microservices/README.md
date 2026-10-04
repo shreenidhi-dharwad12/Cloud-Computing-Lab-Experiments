@@ -80,7 +80,7 @@ http://patient-service:5001
 http://doctor-service:5002
 ```
 
-and does not depend on `localhost` for inter-container communication.
+The services use Docker service names for communication rather than `localhost`.
 
 ---
 
@@ -219,6 +219,7 @@ Example response structure:
 │   └── 04-memory-utilization.png
 │
 ├── screenshots/
+│
 ├── docker-compose.yml
 ├── workload_test.py
 ├── workload_monitor.py
@@ -233,13 +234,13 @@ Example response structure:
 
 Each microservice has its own Dockerfile.
 
-The services are built using Docker Compose:
+The services can be built using:
 
 ```powershell
 docker compose build
 ```
 
-The three services are then started using:
+The services are started using:
 
 ```powershell
 docker compose up -d
@@ -258,6 +259,8 @@ patient-service
 doctor-service
 appointment-service
 ```
+
+The final Docker Compose configuration also includes health checks. After startup, all three services were verified to reach the **healthy** state.
 
 ---
 
@@ -278,6 +281,10 @@ patient-service:5001
 doctor-service:5002
 ```
 
+```text
+doctor-service:5002
+```
+
 This demonstrates communication between independently containerized microservices.
 
 ---
@@ -287,7 +294,7 @@ This demonstrates communication between independently containerized microservice
 The end-to-end request was tested using:
 
 ```powershell
-curl http://localhost:5003/appointments/1
+curl.exe http://localhost:5003/appointments/1
 ```
 
 The request successfully returned:
@@ -296,17 +303,59 @@ The request successfully returned:
 * Patient information
 * Doctor information
 
-The response returned HTTP status:
+The response returned:
 
 ```text
-200 OK
+HTTP 200 OK
 ```
 
 This demonstrates successful communication between the three microservices.
 
 ---
 
-## 11. Workload Testing
+## 11. Service Failure Handling
+
+Service failure handling was also tested.
+
+The Patient Service was stopped using:
+
+```powershell
+docker compose stop patient-service
+```
+
+When the Appointment API was accessed while the Patient Service was unavailable:
+
+```powershell
+curl.exe -i http://localhost:5003/appointments/1
+```
+
+the service returned:
+
+```text
+HTTP/1.1 503 SERVICE UNAVAILABLE
+```
+
+with:
+
+```json
+{
+    "error": "Dependent microservice unavailable"
+}
+```
+
+This demonstrates that the Appointment Service detects dependency failure and returns an appropriate service-unavailable response.
+
+The Patient Service was subsequently started again using:
+
+```powershell
+docker compose start patient-service
+```
+
+and the services were verified to return to the healthy state.
+
+---
+
+## 12. Workload Testing
 
 Five workload levels were tested:
 
@@ -331,7 +380,7 @@ The following parameters were measured:
 
 ---
 
-## 12. Final Workload Results
+## 13. Final Workload Results
 
 The final workload and resource monitoring run produced the following results:
 
@@ -358,9 +407,9 @@ Failed requests     = 0
 
 ---
 
-## 13. Performance Graphs
+## 14. Performance Graphs
 
-### 13.1 Concurrent Requests vs Average Response Time
+### 14.1 Concurrent Requests vs Average Response Time
 
 ![Response Time](graphs/01-response-time.png)
 
@@ -368,17 +417,19 @@ The average response time increased as the number of concurrent requests increas
 
 ---
 
-### 13.2 Concurrent Requests vs Throughput
+### 14.2 Concurrent Requests vs Throughput
 
 ![Throughput](graphs/02-throughput.png)
 
-Throughput increased with concurrency up to 8 concurrent requests, reaching **118.52 requests/second**. At 16 concurrent requests, throughput decreased to **112.31 requests/second**.
+Throughput increased with concurrency up to 8 concurrent requests, reaching **118.52 requests/second**.
+
+At 16 concurrent requests, throughput decreased slightly to **112.31 requests/second**.
 
 This indicates that the system approached its processing capacity at the highest tested concurrency.
 
 ---
 
-### 13.3 Concurrent Requests vs CPU Utilization
+### 14.3 Concurrent Requests vs CPU Utilization
 
 ![CPU Utilization](graphs/03-cpu-utilization.png)
 
@@ -386,7 +437,7 @@ The measured average CPU utilization remained low across the tested workload lev
 
 ---
 
-### 13.4 Concurrent Requests vs Memory Utilization
+### 14.4 Concurrent Requests vs Memory Utilization
 
 ![Memory Utilization](graphs/04-memory-utilization.png)
 
@@ -394,9 +445,9 @@ The measured average memory usage remained approximately stable across the teste
 
 ---
 
-## 14. Performance Analysis
+## 15. Performance Analysis
 
-### 14.1 Response Time
+### 15.1 Response Time
 
 The average response time increased from:
 
@@ -414,7 +465,7 @@ As the number of concurrent requests increased, more requests were processed sim
 
 ---
 
-### 14.2 Throughput
+### 15.2 Throughput
 
 The measured throughput increased from:
 
@@ -428,7 +479,7 @@ to:
 118.52 requests/second at W4
 ```
 
-At W5, the throughput decreased slightly to:
+At W5, throughput decreased slightly to:
 
 ```text
 112.31 requests/second
@@ -438,7 +489,7 @@ The reduction at the highest concurrency indicates that the system began experie
 
 ---
 
-### 14.3 Success and Failure
+### 15.3 Success and Failure
 
 All workload levels completed successfully.
 
@@ -452,7 +503,7 @@ Therefore, no request failures were observed during the workload testing.
 
 ---
 
-### 14.4 CPU Utilization
+### 15.4 CPU Utilization
 
 Average CPU utilization ranged from:
 
@@ -466,7 +517,7 @@ CPU utilization remained low because the tested workload was relatively small an
 
 ---
 
-### 14.5 Memory Utilization
+### 15.5 Memory Utilization
 
 Average memory usage remained approximately between:
 
@@ -480,33 +531,45 @@ The small variation indicates relatively stable memory consumption during the wo
 
 ---
 
-### 14.6 Resource Consumption Analysis
+### 15.6 Resource Consumption Analysis
 
-Among the three microservices, the **Appointment Service** consumes relatively more memory because it handles appointment processing and performs inter-service communication with both the Patient and Doctor services.
+Among the three microservices, the **Appointment Service was identified as the relatively higher resource-consuming service**, particularly in terms of memory usage, based on the observed Docker resource statistics.
 
-The Patient and Doctor services show slightly lower memory usage.
+The Appointment Service performs appointment processing and communicates with both the Patient and Doctor services to construct the complete appointment response.
 
-CPU utilization remained very low across all three services, with no significant difference observed during the workload testing.
+The Patient and Doctor services showed slightly lower memory usage in the observed resource statistics.
 
-Therefore, the **Appointment Service is identified as the relatively higher resource-consuming service**, particularly in terms of memory usage.
+CPU utilization remained very low across all three services, with no significant CPU difference observed during the workload testing.
+
+Therefore, the **Appointment Service is identified as the relatively higher resource-consuming microservice, particularly in terms of memory usage**.
 
 ---
 
-### 14.7 Performance Degradation
+### 15.7 Performance Degradation
 
 As concurrency increased from 1 to 16, average response time increased significantly.
 
 This is expected because multiple requests are processed concurrently, while the Appointment Service also performs additional communication with the Patient and Doctor services.
 
-At the highest workload level, throughput decreased slightly from **118.52 requests/second at W4** to **112.31 requests/second at W5**.
+At the highest workload level, throughput decreased slightly from:
+
+```text
+118.52 requests/second at W4
+```
+
+to:
+
+```text
+112.31 requests/second at W5
+```
 
 This indicates that increased concurrency introduced additional processing and inter-service communication overhead.
 
-No request failures were observed, so the performance degradation was reflected mainly through increased response time and a slight reduction in throughput at the highest workload.
+No request failures were observed during the workload testing, so the performance degradation was reflected mainly through increased response time and a slight reduction in throughput at the highest workload.
 
 ---
 
-## 15. How to Run the Project
+## 16. How to Run the Project
 
 ### Step 1: Open the project directory
 
@@ -532,22 +595,24 @@ docker compose up -d
 docker compose ps
 ```
 
+The containers should reach the **healthy** state after startup.
+
 ### Step 5: Test the Patient Service
 
 ```powershell
-curl http://localhost:5001/patients/1
+curl.exe http://localhost:5001/patients/1
 ```
 
 ### Step 6: Test the Doctor Service
 
 ```powershell
-curl http://localhost:5002/doctors/1
+curl.exe http://localhost:5002/doctors/1
 ```
 
 ### Step 7: Test the Appointment Service
 
 ```powershell
-curl http://localhost:5003/appointments/1
+curl.exe http://localhost:5003/appointments/1
 ```
 
 ### Step 8: Run workload testing
@@ -564,7 +629,7 @@ python generate_graphs.py
 
 ---
 
-## 16. Conclusion
+## 17. Conclusion
 
 The Hospital Management System was implemented using a microservices architecture with three independently containerized Flask services.
 
@@ -572,13 +637,34 @@ Docker Compose was used to build, start, and manage the services, while a Docker
 
 The Appointment Service successfully communicated with the Patient and Doctor services and produced a combined end-to-end response.
 
-The workload evaluation was performed using five concurrency levels: **1, 2, 4, 8, and 16 concurrent requests**. Across the 100 tested requests, all requests were successful.
+Service failure handling was also demonstrated by stopping the Patient Service and observing a **503 Service Unavailable** response from the Appointment Service.
+
+The workload evaluation was performed using five concurrency levels: **1, 2, 4, 8, and 16 concurrent requests**.
+
+Across the 100 tested requests:
+
+```text
+Successful = 100
+Failed     = 0
+```
 
 The performance measurements demonstrate the effect of increasing concurrency on response time and throughput while also recording CPU and memory utilization.
 
 The Appointment Service was identified as the relatively higher resource-consuming service, particularly in terms of memory usage.
 
-Overall, the project demonstrates microservice decomposition, containerization, service-to-service communication, orchestration, workload testing, monitoring, and performance analysis.
+Overall, the project demonstrates:
+
+* Microservice decomposition
+* REST API development
+* Containerization using Docker
+* Docker Compose orchestration
+* Docker bridge networking
+* Inter-service communication
+* Service failure handling
+* Workload testing
+* Resource monitoring
+* Performance graphs
+* Performance analysis
 
 ---
 
