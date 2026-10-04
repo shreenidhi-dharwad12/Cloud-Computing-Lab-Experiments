@@ -48,28 +48,29 @@ The main objectives of the project are:
 The system consists of three microservices:
 
 ```text
-                    Client
-                      |
-                      v
-             Appointment Service
-                  Port 5003
-                  /       \
-                 /         \
-                v           v
-       Patient Service   Doctor Service
-          Port 5001         Port 5002
+                     Client
+                        |
+                        v
+              Appointment Service
+                   Port 5003
+                   /       \
+                  /         \
+                 v           v
+        Patient Service   Doctor Service
+           Port 5001         Port 5002
 ```
 
 All three services are connected through the Docker network:
 
 ```text
-hospital-network
-       |
-       +----------------------+
-       |          |           |
-       v          v           v
- patient      doctor     appointment
- service      service       service
+                    hospital-network
+                           |
+              +------------+------------+
+              |            |            |
+              v            v            v
+          patient       doctor      appointment
+          service       service        service
+          :5001         :5002          :5003
 ```
 
 The Appointment Service communicates with:
@@ -217,6 +218,7 @@ Example response structure:
 │   ├── 03-cpu-utilization.png
 │   └── 04-memory-utilization.png
 │
+├── screenshots/
 ├── docker-compose.yml
 ├── workload_test.py
 ├── workload_monitor.py
@@ -306,7 +308,7 @@ This demonstrates successful communication between the three microservices.
 
 ## 11. Workload Testing
 
-Five workload levels were tested as required:
+Five workload levels were tested:
 
 | Workload | Concurrent Requests |
 | -------- | ------------------: |
@@ -329,17 +331,30 @@ The following parameters were measured:
 
 ---
 
-## 12. Workload Results
+## 12. Final Workload Results
 
-The final measured results are:
+The final workload and resource monitoring run produced the following results:
 
 | Workload | Concurrent Requests | Success | Failed | Avg Response Time (ms) | Throughput (req/s) | CPU Avg (%) | Memory Avg (MiB) |
 | -------- | ------------------: | ------: | -----: | ---------------------: | -----------------: | ----------: | ---------------: |
-| W1       |                   1 |      20 |      0 |                  20.93 |              46.95 |        0.03 |            24.15 |
-| W2       |                   2 |      20 |      0 |                  28.37 |              65.68 |        0.03 |            24.04 |
-| W3       |                   4 |      20 |      0 |                  35.10 |             107.66 |        0.03 |            24.11 |
-| W4       |                   8 |      20 |      0 |                  52.45 |             127.87 |        0.03 |            24.09 |
-| W5       |                  16 |      20 |      0 |                  79.88 |             133.20 |        0.04 |            24.23 |
+| W1       |                   1 |      20 |      0 |                  22.95 |              43.14 |        0.02 |            26.55 |
+| W2       |                   2 |      20 |      0 |                  25.92 |              75.84 |        0.02 |            26.69 |
+| W3       |                   4 |      20 |      0 |                  38.43 |              92.30 |        0.02 |            26.56 |
+| W4       |                   8 |      20 |      0 |                  54.55 |             118.52 |        0.03 |            26.40 |
+| W5       |                  16 |      20 |      0 |                  83.79 |             112.31 |        0.03 |            26.43 |
+
+A total of:
+
+```text
+5 workload levels × 20 requests = 100 requests
+```
+
+were tested.
+
+```text
+Successful requests = 100
+Failed requests     = 0
+```
 
 ---
 
@@ -349,7 +364,7 @@ The final measured results are:
 
 ![Response Time](graphs/01-response-time.png)
 
-The average response time increased as the number of concurrent requests increased.
+The average response time increased as the number of concurrent requests increased, reaching **83.79 ms** at 16 concurrent requests.
 
 ---
 
@@ -357,7 +372,9 @@ The average response time increased as the number of concurrent requests increas
 
 ![Throughput](graphs/02-throughput.png)
 
-Throughput increased as concurrency increased, with the measured throughput reaching 133.20 requests per second at 16 concurrent requests.
+Throughput increased with concurrency up to 8 concurrent requests, reaching **118.52 requests/second**. At 16 concurrent requests, throughput decreased to **112.31 requests/second**.
+
+This indicates that the system approached its processing capacity at the highest tested concurrency.
 
 ---
 
@@ -365,7 +382,7 @@ Throughput increased as concurrency increased, with the measured throughput reac
 
 ![CPU Utilization](graphs/03-cpu-utilization.png)
 
-The measured average CPU utilization remained low across the tested workload levels.
+The measured average CPU utilization remained low across the tested workload levels, ranging from **0.02% to 0.03%**.
 
 ---
 
@@ -373,83 +390,119 @@ The measured average CPU utilization remained low across the tested workload lev
 
 ![Memory Utilization](graphs/04-memory-utilization.png)
 
-The measured average memory usage remained approximately stable across the tested workload levels.
+The measured average memory usage remained approximately stable across the tested workload levels, ranging from **26.40 MiB to 26.69 MiB**.
 
 ---
 
 ## 14. Performance Analysis
 
-### Response Time
+### 14.1 Response Time
 
 The average response time increased from:
 
 ```text
-20.93 ms at W1
+22.95 ms at W1
 ```
 
 to:
 
 ```text
-79.88 ms at W5
+83.79 ms at W5
 ```
 
-This shows that response time increased as concurrent requests increased.
+As the number of concurrent requests increased, more requests were processed simultaneously. This increased processing and inter-service communication overhead, resulting in higher response times.
 
-### Throughput
+---
+
+### 14.2 Throughput
 
 The measured throughput increased from:
 
 ```text
-46.95 requests/second at W1
+43.14 requests/second at W1
 ```
 
 to:
 
 ```text
-133.20 requests/second at W5
+118.52 requests/second at W4
 ```
 
-### Success and Failure
+At W5, the throughput decreased slightly to:
+
+```text
+112.31 requests/second
+```
+
+The reduction at the highest concurrency indicates that the system began experiencing additional processing and communication overhead.
+
+---
+
+### 14.3 Success and Failure
 
 All workload levels completed successfully.
 
-Total requests:
-
 ```text
-5 workload levels × 20 requests = 100 requests
+Total requests = 100
+Successful     = 100
+Failed         = 0
 ```
 
-Successful requests:
+Therefore, no request failures were observed during the workload testing.
 
-```text
-100
-```
+---
 
-Failed requests:
-
-```text
-0
-```
-
-### CPU Utilization
+### 14.4 CPU Utilization
 
 Average CPU utilization ranged from:
 
 ```text
-0.03% to 0.04%
+0.02% to 0.03%
 ```
 
 during the recorded workload measurements.
 
-### Memory Utilization
+CPU utilization remained low because the tested workload was relatively small and the services performed lightweight operations.
+
+---
+
+### 14.5 Memory Utilization
 
 Average memory usage remained approximately between:
 
 ```text
-24.04 MiB and 24.23 MiB
+26.40 MiB and 26.69 MiB
 ```
 
 across the five workload levels.
+
+The small variation indicates relatively stable memory consumption during the workload tests.
+
+---
+
+### 14.6 Resource Consumption Analysis
+
+Among the three microservices, the **Appointment Service** consumes relatively more memory because it handles appointment processing and performs inter-service communication with both the Patient and Doctor services.
+
+The Patient and Doctor services show slightly lower memory usage.
+
+CPU utilization remained very low across all three services, with no significant difference observed during the workload testing.
+
+Therefore, the **Appointment Service is identified as the relatively higher resource-consuming service**, particularly in terms of memory usage.
+
+---
+
+### 14.7 Performance Degradation
+
+As concurrency increased from 1 to 16, average response time increased significantly.
+
+This is expected because multiple requests are processed concurrently, while the Appointment Service also performs additional communication with the Patient and Doctor services.
+
+At the highest workload level, throughput decreased slightly from **118.52 requests/second at W4** to **112.31 requests/second at W5**.
+
+This indicates that increased concurrency introduced additional processing and inter-service communication overhead.
+
+No request failures were observed, so the performance degradation was reflected mainly through increased response time and a slight reduction in throughput at the highest workload.
 
 ---
 
@@ -519,12 +572,15 @@ Docker Compose was used to build, start, and manage the services, while a Docker
 
 The Appointment Service successfully communicated with the Patient and Doctor services and produced a combined end-to-end response.
 
-The workload evaluation was performed using five concurrency levels: 1, 2, 4, 8, and 16 concurrent requests. Across the 100 tested requests, all requests were successful.
+The workload evaluation was performed using five concurrency levels: **1, 2, 4, 8, and 16 concurrent requests**. Across the 100 tested requests, all requests were successful.
 
 The performance measurements demonstrate the effect of increasing concurrency on response time and throughput while also recording CPU and memory utilization.
 
+The Appointment Service was identified as the relatively higher resource-consuming service, particularly in terms of memory usage.
+
 Overall, the project demonstrates microservice decomposition, containerization, service-to-service communication, orchestration, workload testing, monitoring, and performance analysis.
 
+---
 
 ## Author
 
