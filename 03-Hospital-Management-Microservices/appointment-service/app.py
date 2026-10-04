@@ -30,19 +30,31 @@ def get_appointment(appointment_id):
     if not appointment:
         return jsonify({"error": "Appointment not found"}), 404
 
-    patient_response = requests.get(
-        f"http://patient-service:5001/patients/{appointment['patient_id']}"
-    )
+    try:
+        patient_response = requests.get(
+            f"http://patient-service:5001/patients/{appointment['patient_id']}",
+            timeout=5
+        )
 
-    doctor_response = requests.get(
-        f"http://doctor-service:5002/doctors/{appointment['doctor_id']}"
-    )
+        doctor_response = requests.get(
+            f"http://doctor-service:5002/doctors/{appointment['doctor_id']}",
+            timeout=5
+        )
+
+    except requests.RequestException:
+        return jsonify({
+            "error": "Dependent microservice unavailable"
+        }), 503
 
     if patient_response.status_code != 200:
-        return jsonify({"error": "Patient Service unavailable"}), 503
+        return jsonify({
+            "error": "Patient Service unavailable"
+        }), 503
 
     if doctor_response.status_code != 200:
-        return jsonify({"error": "Doctor Service unavailable"}), 503
+        return jsonify({
+            "error": "Doctor Service unavailable"
+        }), 503
 
     return jsonify({
         "appointment": appointment,

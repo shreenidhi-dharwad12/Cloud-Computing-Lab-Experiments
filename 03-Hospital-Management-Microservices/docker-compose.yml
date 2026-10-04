@@ -7,6 +7,12 @@ services:
       - "5001:5001"
     networks:
       - hospital-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/patients/1')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   doctor-service:
     build: ./doctor-service
@@ -15,6 +21,12 @@ services:
       - "5002:5002"
     networks:
       - hospital-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5002/doctors/1')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   appointment-service:
     build: ./appointment-service
@@ -23,6 +35,12 @@ services:
       - "5003:5003"
     networks:
       - hospital-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5003/appointments/1')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 networks:
   hospital-network:
