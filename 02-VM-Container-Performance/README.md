@@ -632,7 +632,7 @@ The graph-generation script is stored in:
 
 ## Author
 
-**Name:** Nidhi Ashok
+**Name:** Shreenidhi Dharwad
 
 **Course:** Cloud Computing
 
