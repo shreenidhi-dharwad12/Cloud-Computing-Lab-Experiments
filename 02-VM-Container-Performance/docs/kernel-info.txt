@@ -1,0 +1,5 @@
+Kernel Information
+
+Operating system: Ubuntu 24.04.5 LTS
+Kernel: 7.0.0-31-generic
+Virtualization platform: VMware Virtual Platform

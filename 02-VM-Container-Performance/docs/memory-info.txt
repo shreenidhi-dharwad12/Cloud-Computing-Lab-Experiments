@@ -1,0 +1,6 @@
+Memory Information
+
+Virtual machine memory: approximately 1.9 GiB
+Swap: approximately 3.4 GiB
+
+Container memory was configured with a 512 MiB limit for the controlled performance experiment.

@@ -1,0 +1,5 @@
+Virtual Machine CPU Information
+
+CPU cores allocated: 2
+CPU configuration was verified using lscpu.
+CPU benchmarking was performed using Sysbench.

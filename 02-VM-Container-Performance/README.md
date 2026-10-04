@@ -623,9 +623,19 @@ The measured container memory performance is shown below.
 
 The numerical benchmark values used to generate the graphs are stored in:
 
-`results/data/benchmark_results.csv`
+`results/processed/benchmark_results.csv`
 
 The graph-generation script is stored in:
 
-`results/scripts/generate_graphs.py`
+`results/processed/generate_graphs.py`
 
+
+## Author
+
+**Name:** Nidhi Ashok
+
+**Course:** Cloud Computing
+
+**Institution:** KLE Technological University
+
+**Academic Year:** 2026

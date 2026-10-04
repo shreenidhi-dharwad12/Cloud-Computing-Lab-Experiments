@@ -1,0 +1,4 @@
+Storage Information
+
+Virtual disk capacity: 20 GB
+Disk performance was evaluated using FIO for sequential and random read/write workloads.
