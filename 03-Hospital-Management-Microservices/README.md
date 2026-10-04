@@ -524,3 +524,14 @@ The workload evaluation was performed using five concurrency levels: 1, 2, 4, 8,
 The performance measurements demonstrate the effect of increasing concurrency on response time and throughput while also recording CPU and memory utilization.
 
 Overall, the project demonstrates microservice decomposition, containerization, service-to-service communication, orchestration, workload testing, monitoring, and performance analysis.
+
+
+## Author
+
+**Name:** Shreenidhi Ashok
+
+**Course:** Cloud Computing
+
+**Institution:** KLE Technological University
+
+**Academic Year:** 2026
