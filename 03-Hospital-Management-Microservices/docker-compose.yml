@@ -1,47 +1,80 @@
+# Hospital Management System - three microservices on one bridge network.
+#
+#   Client -> appointment-service -> patient-service
+#                                 -> doctor-service
+#
+# appointment-service reaches the others by their Docker service names
+# (patient-service, doctor-service), resolved by Docker's internal DNS.
+
+x-healthcheck-timing: &healthcheck-timing
+  interval: 30s        # kept long so health checks add little CPU noise to docker stats
+  timeout: 3s
+  retries: 3
+  start_period: 15s
+  start_interval: 2s   # check quickly while the container is starting
+
 services:
 
   patient-service:
     build: ./patient-service
     container_name: patient-service
+    environment:
+      PORT: "5001"
     ports:
       - "5001:5001"
     networks:
       - hospital-network
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/patients/1')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5001/health', timeout=2)"]
+      <<: *healthcheck-timing
+    restart: unless-stopped
+    # Python as PID 1 ignores SIGTERM; SIGINT makes Flask exit at once,
+    # so `docker compose stop` takes < 1 s instead of waiting 10 s.
+    stop_signal: SIGINT
 
   doctor-service:
     build: ./doctor-service
     container_name: doctor-service
+    environment:
+      PORT: "5002"
     ports:
       - "5002:5002"
     networks:
       - hospital-network
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5002/doctors/1')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5002/health', timeout=2)"]
+      <<: *healthcheck-timing
+    restart: unless-stopped
+    # Python as PID 1 ignores SIGTERM; SIGINT makes Flask exit at once,
+    # so `docker compose stop` takes < 1 s instead of waiting 10 s.
+    stop_signal: SIGINT
 
   appointment-service:
     build: ./appointment-service
     container_name: appointment-service
+    environment:
+      PORT: "5003"
+      PATIENT_SERVICE_URL: "http://patient-service:5001"
+      DOCTOR_SERVICE_URL: "http://doctor-service:5002"
+      DOWNSTREAM_TIMEOUT_SECONDS: "3"
     ports:
       - "5003:5003"
     networks:
       - hospital-network
+    depends_on:
+      patient-service:
+        condition: service_healthy
+      doctor-service:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5003/appointments/1')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5003/health', timeout=2)"]
+      <<: *healthcheck-timing
+    restart: unless-stopped
+    # Python as PID 1 ignores SIGTERM; SIGINT makes Flask exit at once,
+    # so `docker compose stop` takes < 1 s instead of waiting 10 s.
+    stop_signal: SIGINT
 
 networks:
   hospital-network:
+    name: hospital-network
     driver: bridge

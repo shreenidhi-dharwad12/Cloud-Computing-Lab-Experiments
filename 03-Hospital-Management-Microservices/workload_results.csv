@@ -1,6 +1,0 @@
-Workload,Concurrency,Success,Failed,ResponseTime_ms,Throughput_req_s,CPU_Avg_percent,Memory_Avg_MiB
-W1,1,20,0,22.95,43.14,0.02,26.55
-W2,2,20,0,25.92,75.84,0.02,26.69
-W3,4,20,0,38.43,92.3,0.02,26.56
-W4,8,20,0,54.55,118.52,0.03,26.4
-W5,16,20,0,83.79,112.31,0.03,26.43

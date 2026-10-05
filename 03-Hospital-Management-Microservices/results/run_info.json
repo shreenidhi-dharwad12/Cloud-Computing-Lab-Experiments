@@ -1,0 +1,22 @@
+{
+  "timestamp": "2026-10-05T01:52:20",
+  "target": "GET http://127.0.0.1:5003/appointments/1",
+  "levels": [
+    1,
+    2,
+    4,
+    8,
+    16
+  ],
+  "min_requests_per_run": 500,
+  "min_duration_per_run_s": 10.0,
+  "repetitions": 3,
+  "warmup_requests": 50,
+  "client_timeout_s": 10.0,
+  "load_model": "closed loop: N worker threads, each sends the next request as soon as the previous response arrives",
+  "throughput_definition": "successful requests / wall-clock duration of run",
+  "host_os": "Windows-11-10.0.26200-SP0",
+  "host_cpu_count": 12,
+  "python": "3.13.14",
+  "docker_server": "29.8.0"
+}
