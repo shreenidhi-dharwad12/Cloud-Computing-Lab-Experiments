@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lb-demo
+  namespace: load-balancing
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: lb-demo
+  template:
+    metadata:
+      labels:
+        app: lb-demo
+    spec:
+      containers:
+      - name: web
+        image: traefik/whoami
+        ports:
+        - containerPort: 80
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 3
+          periodSeconds: 5
