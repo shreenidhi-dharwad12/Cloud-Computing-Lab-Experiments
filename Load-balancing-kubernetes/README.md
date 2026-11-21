@@ -1,6 +1,6 @@
 # Load Balancing Using Kubernetes Services
 
-## 1. Project Overview
+## 1\. Project Overview
 
 This project demonstrates **Load Balancing using Kubernetes Services**. It shows how Kubernetes distributes incoming HTTP requests across multiple application Pods, maintains application availability, and supports horizontal scaling.
 
@@ -8,7 +8,7 @@ The experiment is implemented using Docker Desktop Kubernetes and the `kubectl` 
 
 The project also demonstrates how Kubernetes automatically replaces a deleted Pod and maintains the desired number of replicas using a Deployment.
 
-## 2. Objectives
+## 2\. Objectives
 
 1. Understand Kubernetes Deployments and Services.
 2. Deploy multiple replicas of an application.
@@ -18,23 +18,23 @@ The project also demonstrates how Kubernetes automatically replaces a deleted Po
 6. Scale the application from 3 to 5 replicas.
 7. Verify the application status after scaling.
 
-## 3. Technologies Used
+## 3\. Technologies Used
 
-| Technology | Purpose |
-|---|---|
-| Kubernetes | Container orchestration |
-| Docker Desktop | Local Kubernetes environment |
-| kubectl | Kubernetes command-line management |
-| YAML | Deployment and Service configuration |
-| traefik/whoami | Sample web application |
-| curlimages/curl | Sending HTTP requests for testing |
-| PowerShell | Command execution environment |
+|Technology|Purpose|
+|-|-|
+|Kubernetes|Container orchestration|
+|Docker Desktop|Local Kubernetes environment|
+|kubectl|Kubernetes command-line management|
+|YAML|Deployment and Service configuration|
+|traefik/whoami|Sample web application|
+|curlimages/curl|Sending HTTP requests for testing|
+|PowerShell|Command execution environment|
 
-## 4. System Architecture
+## 4\. System Architecture
 
 The following architecture illustrates the complete Kubernetes load balancing setup, including the test client, Kubernetes Service, Deployment, application Pods, self-healing, and horizontal scaling.
 
-![Kubernetes Load Balancing Architecture](<Kubernetes Load Balancing Architecture.png>)
+!\[Kubernetes Load Balancing Architecture](Kubernetes Load Balancing Architecture.png)
 
 ### Architecture Explanation
 
@@ -49,7 +49,7 @@ The following architecture illustrates the complete Kubernetes load balancing se
 
 Load Test Client Pod → Kubernetes Service → Available Application Pods
 
-## 5. Project Structure
+## 5\. Project Structure
 
 ```text
 Load-balancing-kubernetes/
@@ -60,15 +60,15 @@ Load-balancing-kubernetes/
 ├── Kubernetes Load Balancing Architecture.png
 │
 └── screenshots/
-    ├── 01_YAML_Configuration_and_Validation.png
-    ├── 02_Deployment_Service_and_Three_Ready_Pods.png
-    ├── 03_100_Requests_Load_Balancing_Results.png
-    ├── 04_Pod_Deletion_and_Automatic_Replacement.png
-    ├── 05_Scaling_From_Three_To_Five_Replicas.png
-    └── 06_Load_Balancing_After_Scaling_To_Five_Pods.png
+    ├── 01\_YAML\_Configuration\_and\_Validation.png
+    ├── 02\_Deployment\_Service\_and\_Three\_Ready\_Pods.png
+    ├── 03\_100\_Requests\_Load\_Balancing\_Results.png
+    ├── 04\_Pod\_Deletion\_and\_Automatic\_Replacement.png
+    ├── 05\_Scaling\_From\_Three\_To\_Five\_Replicas.png
+    └── 06\_Load\_Balancing\_After\_Scaling\_To\_Five\_Pods.png
 ```
 
-## 6. Implementation
+## 6\. Implementation
 
 ### Step 1: Create a Kubernetes Namespace
 
@@ -83,11 +83,12 @@ kubectl create namespace load-balancing
 The `deployment.yaml` file defines the application and its replicas.
 
 Configuration:
-- Deployment name: `lb-demo`
-- Initial replicas: 3
-- Container image: `traefik/whoami`
-- Container port: 80
-- Readiness probe: HTTP GET on port 80
+
+* Deployment name: `lb-demo`
+* Initial replicas: 3
+* Container image: `traefik/whoami`
+* Container port: 80
+* Readiness probe: HTTP GET on port 80
 
 Apply the Deployment:
 
@@ -107,12 +108,12 @@ The `service.yaml` file exposes the application using a NodePort Service.
 
 Configuration:
 
-- Service name: `lb-demo-svc`
-- Service type: NodePort
-- Service port: 80
-- Target port: 80
-- NodePort: 30080
-- Selector: `app: lb-demo`
+* Service name: `lb-demo-svc`
+* Service type: NodePort
+* Service port: 80
+* Target port: 80
+* NodePort: 30080
+* Selector: `app: lb-demo`
 
 Apply the Service:
 
@@ -154,12 +155,12 @@ kubectl logs lb-test -n load-balancing
 
 **Observed Results — 3 Replicas**
 
-| Application Pod | Requests Received |
-|---|---:|
-| Pod 1 | 37 |
-| Pod 2 | 30 |
-| Pod 3 | 33 |
-| **Total** | **100** |
+|Application Pod|Requests Received|
+|-|-:|
+|Pod 1|37|
+|Pod 2|30|
+|Pod 3|33|
+|**Total**|**100**|
 
 The results demonstrate that requests were distributed across all three application Pods.
 
@@ -219,46 +220,46 @@ kubectl logs lb-test -n load-balancing
 
 **Observed Results — 5 Replicas**
 
-| Application Pod | Requests Received |
-|---|---:|
-| Pod 1 | 23 |
-| Pod 2 | 30 |
-| Pod 3 | 15 |
-| Pod 4 | 20 |
-| Pod 5 | 12 |
-| **Total** | **100** |
+|Application Pod|Requests Received|
+|-|-:|
+|Pod 1|23|
+|Pod 2|30|
+|Pod 3|15|
+|Pod 4|20|
+|Pod 5|12|
+|**Total**|**100**|
 
 All five Pods received requests, demonstrating load distribution after horizontal scaling.
 
 *Note: Kubernetes Service load distribution is not guaranteed to follow strict round-robin scheduling. Therefore, request counts can vary between Pods.*
 
-## 7. Screenshots and Execution Results
+## 7\. Screenshots and Execution Results
 
-### 1. YAML Configuration and Validation
+### 1\. YAML Configuration and Validation
 
-![YAML Configuration](screenshots/01_YAML_Configuration_and_Validation.png)
+!\[YAML Configuration](screenshots/01\_YAML\_Configuration\_and\_Validation.png)
 
-### 2. Deployment, Service and Three Ready Pods
+### 2\. Deployment, Service and Three Ready Pods
 
-![Deployment and Service](screenshots/02_Deployment_Service_and_Three_Ready_Pods.png)
+!\[Deployment and Service](screenshots/02\_Deployment\_Service\_and\_Three\_Ready\_Pods.png)
 
-### 3. Load Balancing with 100 Requests
+### 3\. Load Balancing with 100 Requests
 
-![Load Balancing Results](screenshots/03_100_Requests_Load_Balancing_Results.png)
+!\[Load Balancing Results](screenshots/03\_100\_Requests\_Load\_Balancing\_Results.png)
 
-### 4. Pod Deletion and Automatic Replacement
+### 4\. Pod Deletion and Automatic Replacement
 
-![Self Healing](screenshots/04_Pod_Deletion_and_Automatic_Replacement.png)
+!\[Self Healing](screenshots/04\_Pod\_Deletion\_and\_Automatic\_Replacement.png)
 
-### 5. Scaling from Three to Five Replicas
+### 5\. Scaling from Three to Five Replicas
 
-![Horizontal Scaling](screenshots/05_Scaling_From_Three_To_Five_Replicas.png)
+!\[Horizontal Scaling](screenshots/05\_Scaling\_From\_Three\_To\_Five\_Replicas.png)
 
-### 6. Load Balancing After Scaling
+### 6\. Load Balancing After Scaling
 
-![Five Pod Load Balancing](screenshots/06_Load_Balancing_After_Scaling_To_Five_Pods.png)
+!\[Five Pod Load Balancing](screenshots/06\_Load\_Balancing\_After\_Scaling\_To\_Five\_Pods.png)
 
-## 8. Final Verification
+## 8\. Final Verification
 
 The following command verifies the final Deployment, Pods, and Service:
 
@@ -268,15 +269,15 @@ kubectl get all -n load-balancing
 
 **Final Observations:**
 
-- Deployment successfully maintained 5 replicas.
-- All 5 application Pods reached the Running state.
-- The Kubernetes Service exposed the application on port 80.
-- NodePort 30080 was configured for external access.
-- 100 HTTP requests were successfully tested through the Service from inside the cluster.
-- Requests were distributed across all five application Pods.
-- Automatic Pod replacement was successfully demonstrated.
+* Deployment successfully maintained 5 replicas.
+* All 5 application Pods reached the Running state.
+* The Kubernetes Service exposed the application on port 80.
+* NodePort 30080 was configured for external access.
+* 100 HTTP requests were successfully tested through the Service from inside the cluster.
+* Requests were distributed across all five application Pods.
+* Automatic Pod replacement was successfully demonstrated.
 
-## 9. Advantages
+## 9\. Advantages
 
 1. **Load Distribution:** Distributes incoming requests across multiple application Pods.
 2. **High Availability:** Multiple replicas help keep the application available.
@@ -284,10 +285,37 @@ kubectl get all -n load-balancing
 4. **Scalability:** Supports increasing or decreasing the number of replicas.
 5. **Resource Utilization:** Allows application workloads to be handled by multiple Pods.
 
-## 10. Conclusion
+## 10\. Conclusion
 
 This experiment successfully demonstrates Kubernetes load balancing using a NodePort Service and Deployment.
 
 The application was initially deployed with three replicas, and 100 HTTP requests were distributed across the available Pods. The self-healing capability was verified by deleting a Pod and observing its automatic replacement.
 
-The Deployment was then scaled from three to five replicas, and another 100-request test
+The Deployment was then scaled from three to five replicas, and another 100-request test confirmed that all five Pods received incoming traffic.
+
+
+
+Thus, the experiment successfully demonstrates the important Kubernetes concepts of \*\*Load Balancing, Service Discovery, Self-Healing, and Horizontal Scaling\*\*.
+
+
+
+\## 11. Author Details
+
+
+
+\*\*Name:\*\* Shreenidhi Dharwad
+
+
+
+\*\*Department:\*\* Computer Science and Engineering (AI)
+
+
+
+\*\*Semester:\*\* 5th Semester
+
+
+
+\*\*Subject:\*\* Cloud Computing
+
+
+
