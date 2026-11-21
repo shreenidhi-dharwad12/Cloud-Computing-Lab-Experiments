@@ -60,12 +60,12 @@ Load-balancing-kubernetes/
 ├── Kubernetes Load Balancing Architecture.png
 │
 └── screenshots/
-    ├── 01\\\\\\\_YAML\\\\\\\_Configuration\\\\\\\_and\\\\\\\_Validation.png
-    ├── 02\\\\\\\_Deployment\\\\\\\_Service\\\\\\\_and\\\\\\\_Three\\\\\\\_Ready\\\\\\\_Pods.png
-    ├── 03\\\\\\\_100\\\\\\\_Requests\\\\\\\_Load\\\\\\\_Balancing\\\\\\\_Results.png
-    ├── 04\\\\\\\_Pod\\\\\\\_Deletion\\\\\\\_and\\\\\\\_Automatic\\\\\\\_Replacement.png
-    ├── 05\\\\\\\_Scaling\\\\\\\_From\\\\\\\_Three\\\\\\\_To\\\\\\\_Five\\\\\\\_Replicas.png
-    └── 06\\\\\\\_Load\\\\\\\_Balancing\\\\\\\_After\\\\\\\_Scaling\\\\\\\_To\\\\\\\_Five\\\\\\\_Pods.png
+    ├── 01\\\\\\\\\\\\\\\_YAML\\\\\\\\\\\\\\\_Configuration\\\\\\\\\\\\\\\_and\\\\\\\\\\\\\\\_Validation.png
+    ├── 02\\\\\\\\\\\\\\\_Deployment\\\\\\\\\\\\\\\_Service\\\\\\\\\\\\\\\_and\\\\\\\\\\\\\\\_Three\\\\\\\\\\\\\\\_Ready\\\\\\\\\\\\\\\_Pods.png
+    ├── 03\\\\\\\\\\\\\\\_100\\\\\\\\\\\\\\\_Requests\\\\\\\\\\\\\\\_Load\\\\\\\\\\\\\\\_Balancing\\\\\\\\\\\\\\\_Results.png
+    ├── 04\\\\\\\\\\\\\\\_Pod\\\\\\\\\\\\\\\_Deletion\\\\\\\\\\\\\\\_and\\\\\\\\\\\\\\\_Automatic\\\\\\\\\\\\\\\_Replacement.png
+    ├── 05\\\\\\\\\\\\\\\_Scaling\\\\\\\\\\\\\\\_From\\\\\\\\\\\\\\\_Three\\\\\\\\\\\\\\\_To\\\\\\\\\\\\\\\_Five\\\\\\\\\\\\\\\_Replicas.png
+    └── 06\\\\\\\\\\\\\\\_Load\\\\\\\\\\\\\\\_Balancing\\\\\\\\\\\\\\\_After\\\\\\\\\\\\\\\_Scaling\\\\\\\\\\\\\\\_To\\\\\\\\\\\\\\\_Five\\\\\\\\\\\\\\\_Pods.png
 ```
 
 ## 6\. Implementation
@@ -284,23 +284,40 @@ kubectl get all -n load-balancing
 3. **Self-Healing:** Automatically replaces failed or deleted Pods.
 4. **Scalability:** Supports increasing or decreasing the number of replicas.
 5. **Resource Utilization:** Allows application workloads to be handled by multiple Pods.
-6. ## \## 10. Conclusion
-7. ## 
-8. ## This experiment successfully demonstrates Kubernetes load balancing using a NodePort Service and Deployment.
-9. ## 
-10. ## The application was initially deployed with three replicas, and 100 HTTP requests were distributed across the available Pods. The self-healing capability was verified by deleting a Pod and observing its automatic replacement.
-11. ## 
-12. ## The Deployment was then scaled from three to five replicas, and another 100-request test confirmed that all five Pods received incoming traffic.
-13. ## 
-14. ## Thus, the experiment successfully demonstrates the important Kubernetes concepts of \*\*Load Balancing, Service Discovery, Self-Healing, and Horizontal Scaling\*\*.
-15. ## 
-16. ## \## 11. Author Details
-17. ## 
-18. ## \*\*Name:\*\* Shreenidhi Dharwad
-19. ## 
-20. ## \*\*Department:\*\* Computer Science and Engineering (AI)
-21. ## 
-22. ## \*\*Semester:\*\* 5th Semester
-23. ## 
-24. ## \*\*Subject:\*\* Cloud Computing
+
+## 10\. Conclusion
+
+This experiment successfully demonstrates Kubernetes load balancing using a NodePort Service and Deployment.
+
+
+
+The application was initially deployed with three replicas, and 100 HTTP requests were distributed across the available Pods. The self-healing capability was verified by deleting a Pod and observing its automatic replacement.
+
+
+
+The Deployment was then scaled from three to five replicas, and another 100-request test confirmed that all five Pods received incoming traffic.
+
+
+
+Thus, the experiment successfully demonstrates the important Kubernetes concepts of Load Balancing, Service Discovery, Self-Healing, and Horizontal Scaling.
+
+
+
+## 11\. Author Details
+
+
+
+Name: Shreenidhi Dharwad
+
+
+
+Department: Computer Science and Engineering (AI)
+
+
+
+Semester: 5th Semester
+
+
+
+Subject: Cloud Computing
 
