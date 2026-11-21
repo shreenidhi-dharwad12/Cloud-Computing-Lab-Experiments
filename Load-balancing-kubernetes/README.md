@@ -13,13 +13,13 @@ Deployment from three replicas to five replicas.
 
 ## 2. Objectives
 
--   Deploy a containerized web application on Kubernetes.
--   Create a Deployment with multiple replicas.
--   Expose the application using a NodePort Service.
--   Observe how a Kubernetes Service distributes requests across Pods.
--   Demonstrate automatic Pod replacement using a Deployment.
--   Scale the application from three replicas to five replicas.
--   Compare request distribution before and after scaling.
+1.   Deploy a containerized web application on Kubernetes.
+2.   Create a Deployment with multiple replicas.
+3.   Expose the application using a NodePort Service.
+4.   Observe how a Kubernetes Service distributes requests across Pods.
+5.   Demonstrate automatic Pod replacement using a Deployment.
+6.   Scale the application from three replicas to five replicas.
+7.   Compare request distribution before and after scaling.
 
 ## 3. Technologies Used
 
