@@ -60,12 +60,12 @@ Load-balancing-kubernetes/
 ├── Kubernetes Load Balancing Architecture.png
 │
 └── screenshots/
-    ├── 01\_YAML\_Configuration\_and\_Validation.png
-    ├── 02\_Deployment\_Service\_and\_Three\_Ready\_Pods.png
-    ├── 03\_100\_Requests\_Load\_Balancing\_Results.png
-    ├── 04\_Pod\_Deletion\_and\_Automatic\_Replacement.png
-    ├── 05\_Scaling\_From\_Three\_To\_Five\_Replicas.png
-    └── 06\_Load\_Balancing\_After\_Scaling\_To\_Five\_Pods.png
+    ├── 01\\\_YAML\\\_Configuration\\\_and\\\_Validation.png
+    ├── 02\\\_Deployment\\\_Service\\\_and\\\_Three\\\_Ready\\\_Pods.png
+    ├── 03\\\_100\\\_Requests\\\_Load\\\_Balancing\\\_Results.png
+    ├── 04\\\_Pod\\\_Deletion\\\_and\\\_Automatic\\\_Replacement.png
+    ├── 05\\\_Scaling\\\_From\\\_Three\\\_To\\\_Five\\\_Replicas.png
+    └── 06\\\_Load\\\_Balancing\\\_After\\\_Scaling\\\_To\\\_Five\\\_Pods.png
 ```
 
 ## 6\. Implementation
@@ -285,37 +285,41 @@ kubectl get all -n load-balancing
 4. **Scalability:** Supports increasing or decreasing the number of replicas.
 5. **Resource Utilization:** Allows application workloads to be handled by multiple Pods.
 
-## 10\. Conclusion
+## \## 10. Conclusion
 
-This experiment successfully demonstrates Kubernetes load balancing using a NodePort Service and Deployment.
+## 
 
-The application was initially deployed with three replicas, and 100 HTTP requests were distributed across the available Pods. The self-healing capability was verified by deleting a Pod and observing its automatic replacement.
+## This experiment successfully demonstrates Kubernetes load balancing using a NodePort Service and Deployment.
 
-The Deployment was then scaled from three to five replicas, and another 100-request test confirmed that all five Pods received incoming traffic.
+## 
 
+## The application was initially deployed with three replicas, and 100 HTTP requests were distributed across the available Pods. The self-healing capability was verified by deleting a Pod and observing its automatic replacement.
 
+## 
 
-Thus, the experiment successfully demonstrates the important Kubernetes concepts of \*\*Load Balancing, Service Discovery, Self-Healing, and Horizontal Scaling\*\*.
+## The Deployment was then scaled from three to five replicas, and another 100-request test confirmed that all five Pods received incoming traffic.
 
+## 
 
+## Thus, the experiment successfully demonstrates the important Kubernetes concepts of \*\*Load Balancing, Service Discovery, Self-Healing, and Horizontal Scaling\*\*.
 
-\## 11. Author Details
+## 
 
+## \## 11. Author Details
 
+## 
 
-\*\*Name:\*\* Shreenidhi Dharwad
+## \*\*Name:\*\* Shreenidhi Dharwad
 
+## 
 
+## \*\*Department:\*\* Computer Science and Engineering (AI)
 
-\*\*Department:\*\* Computer Science and Engineering (AI)
+## 
 
+## \*\*Semester:\*\* 5th Semester
 
+## 
 
-\*\*Semester:\*\* 5th Semester
-
-
-
-\*\*Subject:\*\* Cloud Computing
-
-
+## \*\*Subject:\*\* Cloud Computing
 
