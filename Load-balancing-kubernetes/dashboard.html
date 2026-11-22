@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Service Load Balancing Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: one working screen. Cluster view and tally on the left, controls, endpoints and terminal on the right. Tabs switch to measured results and the command runbook. */
+:root {
+  --bg: #F2F5FB; --surface: #FFFFFF; --surface-2: #E9EEF9; --ink: #0F1B3D; --muted: #54628A; --line: #D2DBEE;
+  --blue: #2B5FD6; --blue-soft: #DCE6FF; --amber: #B8700C; --amber-soft: #FFF0D6;
+  --green: #17855A; --green-soft: #DDF3E8; --red: #BF3B2D; --red-soft: #FBE3DF;
+  --term-bg: #0B1226; --term-ink: #D4E1FF; --term-dim: #7F92BD; --term-accent: #F2A33A;
+  --display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --text: "Inter", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0A1022; --surface: #111A35; --surface-2: #1A2748; --ink: #E6ECFA; --muted: #92A2C9; --line: #26345A;
+    --blue: #7AA2FF; --blue-soft: #1B2D5D; --amber: #F2A33A; --amber-soft: #3A2C12;
+    --green: #4CC38A; --green-soft: #143A2B; --red: #FF8171; --red-soft: #45201C; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0A1022; --surface: #111A35; --surface-2: #1A2748; --ink: #E6ECFA; --muted: #92A2C9; --line: #26345A;
+  --blue: #7AA2FF; --blue-soft: #1B2D5D; --amber: #F2A33A; --amber-soft: #3A2C12;
+  --green: #4CC38A; --green-soft: #143A2B; --red: #FF8171; --red-soft: #45201C; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 400 15px/1.5 var(--text); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 20px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h1 { font-size: clamp(1.5rem, 1.1rem + 1.6vw, 2.1rem); font-weight: 700; }
+h2 { font-size: 1.05rem; font-weight: 600; }
+h3 { font-size: .95rem; font-weight: 600; }
+.sub { color: var(--muted); margin: 4px 0 0; }
+.eyebrow { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
+.tabs { display: flex; gap: 4px; background: var(--surface-2); padding: 4px; border-radius: 10px; flex-wrap: wrap; }
+.tab { font: 500 .9rem var(--text); border: 0; background: transparent; color: var(--muted); padding: 8px 14px; border-radius: 7px; cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(10,20,50,.15); }
+button:focus-visible, a:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.notice { margin: 16px 0 0; padding: 10px 14px; border-radius: 10px; background: var(--amber-soft); color: var(--ink); border: 1px solid var(--line); font-size: .9rem; }
+.notice b { color: var(--amber); }
+.flowhint { margin: 12px 0 0; display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--muted); font-size: .88rem; }
+.flowhint span b { color: var(--ink); font-weight: 600; }
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; margin-top: 16px; align-items: start; }
+.stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; min-width: 0; }
+.card > .head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+
+/* cluster flow */
+.flow { display: grid; grid-template-columns: auto 36px auto 36px minmax(0, 1fr); gap: 0; align-items: center; }
+.node { border-radius: 12px; padding: 12px 14px; min-width: 0; }
+.client { background: var(--ink); color: var(--bg); }
+.client .eyebrow { color: inherit; opacity: .7; }
+.service { background: var(--blue); color: #fff; min-width: 190px; }
+:root[data-theme="dark"] .service { color: #0A1022; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .service { color: #0A1022; } }
+.service .eyebrow { color: inherit; opacity: .8; }
+.service dl { margin: 6px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: .82rem; }
+.service dt { opacity: .8; } .service dd { margin: 0; font-family: var(--mono); font-size: .78rem; }
+.link { height: 2px; background: var(--line); position: relative; }
+.link::after { content: ""; position: absolute; right: -1px; top: -5px; border: 6px solid transparent; border-left: 8px solid var(--line); border-right: 0; }
+.pods { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 10px; padding-left: 4px; }
+.pod { border: 1px solid var(--line); background: var(--surface-2); border-radius: 12px; padding: 10px; min-width: 0; display: flex; flex-direction: column; gap: 6px; transition: border-color .2s, background .2s; }
+.pod.hit { border-color: var(--blue); background: var(--blue-soft); }
+.pod.s-notready { background: var(--red-soft); border-color: var(--red); }
+.pod.s-starting { border-style: dashed; }
+.pod.s-terminating { opacity: .5; border-style: dashed; }
+.pod .nm { font-family: var(--mono); font-size: .8rem; font-weight: 500; overflow-wrap: anywhere; }
+.pod .nm small { color: var(--muted); font-size: .68rem; display: block; }
+.chip { display: inline-block; font-size: .7rem; font-weight: 600; padding: 2px 8px; border-radius: 99px; width: fit-content; }
+.c-ready { background: var(--green-soft); color: var(--green); }
+.c-notready { background: var(--red-soft); color: var(--red); }
+.c-starting { background: var(--amber-soft); color: var(--amber); }
+.c-terminating { background: var(--surface); color: var(--muted); border: 1px solid var(--line); }
+.pod .ip { font-family: var(--mono); font-size: .72rem; color: var(--muted); }
+.pod .cnt { font: 600 1.4rem var(--display); font-variant-numeric: tabular-nums; }
+.pod .acts { display: flex; gap: 6px; flex-wrap: wrap; }
+.mini { font: 500 .74rem var(--text); border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 7px; padding: 4px 8px; cursor: pointer; }
+.mini:hover { border-color: var(--blue); }
+.mini:disabled { opacity: .4; cursor: default; }
+
+/* tally */
+.bars { display: grid; gap: 8px; }
+.bar { display: grid; grid-template-columns: 92px minmax(0, 1fr) 44px; gap: 10px; align-items: center; font-size: .85rem; }
+.bar .lbl { font-family: var(--mono); font-size: .76rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track { height: 18px; background: var(--surface-2); border-radius: 6px; position: relative; overflow: hidden; }
+.fill { height: 100%; background: var(--blue); border-radius: 6px; width: 0; transition: width .15s; }
+.mark { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--amber); }
+.bar .val { font: 600 .9rem var(--text); text-align: right; font-variant-numeric: tabular-nums; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 14px; font-size: .85rem; color: var(--muted); }
+.stats b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.legend { display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; color: var(--muted); }
+.legend i { width: 2px; height: 12px; background: var(--amber); display: inline-block; }
+
+/* controls */
+.ctl { display: grid; gap: 14px; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.row > label, .row > .lab { font-weight: 500; }
+.row small { display: block; color: var(--muted); font-weight: 400; font-size: .78rem; }
+.stepper { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+.stepper button { width: 34px; height: 34px; border: 0; background: var(--surface-2); color: var(--ink); font-size: 1.1rem; cursor: pointer; }
+.stepper output { min-width: 38px; text-align: center; font: 600 1rem var(--display); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+.seg button { border: 0; background: var(--surface); color: var(--muted); font: 500 .8rem var(--text); padding: 7px 10px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--blue); color: #fff; }
+:root[data-theme="dark"] .seg button[aria-pressed="true"] { color: #0A1022; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .seg button[aria-pressed="true"] { color: #0A1022; } }
+.sw { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.sw input { width: 18px; height: 18px; accent-color: var(--blue); }
+.btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.btn { font: 600 .9rem var(--text); border-radius: 10px; padding: 10px 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; }
+.btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+:root[data-theme="dark"] .btn.primary { color: #0A1022; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.primary { color: #0A1022; } }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn.wide { grid-column: 1 / -1; }
+
+.eps { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; }
+.ep { font-family: var(--mono); font-size: .78rem; background: var(--green-soft); color: var(--green); padding: 3px 8px; border-radius: 6px; }
+.empty { color: var(--red); font-size: .85rem; }
+
+/* terminal */
+.term { background: var(--term-bg); color: var(--term-ink); border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
+.term .bar2 { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; font-size: .74rem; color: var(--term-dim); border-bottom: 1px solid rgba(255,255,255,.08); gap: 8px; flex-wrap: wrap; }
+.term pre { margin: 0; padding: 12px; height: 300px; overflow: auto; font: 400 .76rem/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+.term .p { color: var(--term-accent); }
+.term .o { color: var(--term-ink); }
+.term .n { color: var(--term-dim); font-style: italic; }
+.lastcmd { display: flex; gap: 8px; align-items: center; background: var(--surface-2); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; }
+.lastcmd code { flex: 1; min-width: 0; font: 400 .76rem var(--mono); overflow-wrap: anywhere; }
+
+/* real results tab */
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.facts { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.facts td { padding: 8px 10px; border-top: 1px solid var(--line); vertical-align: top; }
+.facts td:first-child { color: var(--muted); width: 38%; }
+.tablewrap { overflow-x: auto; }
+.mono { font-family: var(--mono); font-size: .82rem; }
+ul.clean { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+
+/* commands tab */
+.step { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; padding: 14px 0; border-top: 1px solid var(--line); }
+.step:first-child { border-top: 0; }
+.step .n { width: 30px; height: 30px; border-radius: 50%; background: var(--blue); color: #fff; display: grid; place-items: center; font: 600 .85rem var(--display); }
+:root[data-theme="dark"] .step .n { color: #0A1022; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .step .n { color: #0A1022; } }
+.code { position: relative; background: var(--term-bg); color: var(--term-ink); border-radius: 10px; margin: 8px 0 6px; }
+.code pre { margin: 0; padding: 12px 70px 12px 12px; white-space: pre-wrap; overflow-wrap: anywhere; font: 400 .78rem/1.55 var(--mono); }
+.code .cp { position: absolute; top: 8px; right: 8px; }
+.shot { color: var(--muted); font-size: .84rem; }
+.shot b { color: var(--amber); font-weight: 600; }
+.cp { font: 500 .74rem var(--text); background: rgba(255,255,255,.1); color: var(--term-ink); border: 1px solid rgba(255,255,255,.2); border-radius: 7px; padding: 4px 9px; cursor: pointer; }
+.lastcmd .cp { background: var(--surface); color: var(--ink); border-color: var(--line); }
+
+@media (max-width: 960px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) {
+  .flow { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .link { width: 2px; height: 26px; margin: 0 auto; }
+  .link::after { right: auto; left: -5px; top: auto; bottom: -1px; border: 6px solid transparent; border-top: 8px solid var(--line); border-bottom: 0; }
+  .pods { padding-left: 0; padding-top: 0; }
+  .bar { grid-template-columns: 70px minmax(0, 1fr) 36px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head><body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">CLOUD COMPUTING LAB · KUBERNETES</div>
+      <h1>Service Load Balancing Lab</h1>
+      <p class="sub">Explore the request flow, then verify it against your live Docker Desktop cluster.</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" id="tab-demo" data-tab="demo" aria-selected="true">Live demo</button>
+      <button class="tab" role="tab" id="tab-results" data-tab="results" aria-selected="false">Our real run</button>
+      <button class="tab" role="tab" id="tab-commands" data-tab="commands" aria-selected="false">Commands</button>
+    </div>
+  </header>
+
+  <!-- DEMO -->
+  <section id="demo" role="tabpanel" aria-labelledby="tab-demo">
+    <p class="notice"><b>Simulation.</b> Everything on this tab runs in your browser and mimics a cluster. It is not connected to Kubernetes. Measured numbers from our laptop are in the “Our real run” tab.</p>
+    <p class="flowhint"><span><b>Try this:</b></span><span>1. Send 100 requests</span><span>2. Delete a pod</span><span>3. Scale to 5 replicas</span><span>4. Mark a pod not ready</span><span>5. Switch to a reused connection</span></p>
+
+    <div class="cols">
+      <div class="stack">
+        <div class="card">
+          <div class="head"><h2>Cluster</h2><span class="eyebrow">Client → Service → pods</span></div>
+          <div class="flow">
+            <div class="node client"><div class="eyebrow">Client</div><div style="font-weight:600">curl.exe</div><div class="mono" style="opacity:.8">127.0.0.1:54327</div></div>
+            <div class="link" aria-hidden="true"></div>
+            <div class="node service">
+              <div class="eyebrow">Service</div>
+              <div style="font-family:var(--display);font-weight:600">lb-demo-svc</div>
+              <dl>
+                <dt>type</dt><dd>NodePort</dd>
+                <dt>port</dt><dd>80 → 30080</dd>
+                <dt>selector</dt><dd>app=lb-demo</dd>
+                <dt>endpoints</dt><dd id="epCount">3 ready</dd>
+              </dl>
+            </div>
+            <div class="link" aria-hidden="true"></div>
+            <div class="pods" id="pods" aria-live="polite"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="head"><h2>Requests answered per pod</h2><span class="legend"><i></i>even split</span></div>
+          <div class="bars" id="bars"></div>
+          <div class="stats" id="stats"></div>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="card">
+          <div class="head"><h2>Controls</h2></div>
+          <div class="ctl">
+            <div class="row"><div class="lab">Replicas<small>Deployment lb-demo</small></div>
+              <div class="stepper"><button data-act="scale-down" aria-label="Fewer replicas">−</button><output id="repl">3</output><button data-act="scale-up" aria-label="More replicas">+</button></div></div>
+            <div class="row"><div class="lab">Client connection<small>Balancing happens per connection</small></div>
+              <div class="seg" role="group" aria-label="Client connection">
+                <button data-act="mode-new" id="mNew" aria-pressed="true">New each time</button>
+                <button data-act="mode-reuse" id="mReuse" aria-pressed="false">Reused</button></div></div>
+            <div class="row"><label class="sw" for="aff"><input type="checkbox" id="aff" data-act="affinity"><span>sessionAffinity: ClientIP<small>Sticks a client to one pod</small></span></label></div>
+            <div class="btns">
+              <button class="btn" data-act="send1" id="b1">Send 1 request</button>
+              <button class="btn primary" data-act="send100" id="b100">Send 100 requests</button>
+              <button class="btn wide" data-act="reset">Reset counters</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="head"><h2>Endpoints</h2><span class="eyebrow">Ready pod IPs only</span></div>
+          <div class="eps" id="eps"></div>
+        </div>
+
+        <div class="card">
+          <div class="head"><h2>Terminal</h2><span class="eyebrow">Simulated output</span></div>
+          <div class="lastcmd"><code id="lastCmd">No command yet. Press a button.</code><button class="cp" data-act="copy-last">Copy</button></div>
+          <div class="term"><div class="bar2"><span>PowerShell · Load-balancing-kubernetes</span><span>output is simulated</span></div><pre id="term" aria-live="polite"></pre></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- REAL CLUSTER -->
+  <section id="results" role="tabpanel" aria-labelledby="tab-results" hidden>
+    <p class="notice" style="background:var(--green-soft)"><b style="color:var(--green)">Connected to your cluster.</b> This tab reads the actual Docker Desktop Kubernetes context and the <span class="mono">load-balancing</span> namespace. Run a real in-cluster request test to populate the distribution chart.</p>
+    <div class="grid3" style="margin-top:16px">
+      <div class="card"><div class="eyebrow">Deployment</div><div class="cnt" id="liveDeployment">Loading…</div><div class="sub">Ready / desired replicas</div></div>
+      <div class="card"><div class="eyebrow">Ready endpoints</div><div class="cnt" id="liveEndpoints">—</div><div class="sub">Eligible Service backends</div></div>
+      <div class="card"><div class="eyebrow">Cluster context</div><div class="cnt" style="font-size:1.25rem">docker-desktop</div><div class="sub">Namespace: load-balancing</div></div>
+    </div>
+    <div class="cols" style="margin-top:16px">
+      <div class="stack">
+        <div class="card">
+          <div class="head"><h2>Actual Kubernetes Pods</h2><span class="eyebrow" id="liveUpdated">Refreshing…</span></div>
+          <div class="tablewrap"><table class="facts" id="livePods"><tbody><tr><td>Loading live Pod data…</td></tr></tbody></table></div>
+        </div>
+        <div class="card">
+          <div class="head"><h2>Actual request distribution</h2><span class="eyebrow" id="testStatus">Not run yet</span></div>
+          <p class="sub">Requests are sent from a temporary curl Pod inside your Kubernetes namespace to <span class="mono">lb-demo-svc</span>. Counts come from the real response Hostname values.</p>
+          <div class="btns" style="margin:14px 0"><button class="btn primary" id="runRealTest" data-real-test>Run 100 real requests</button><button class="btn" id="clearReal" data-clear-real>Clear chart</button></div>
+          <div class="bars" id="realBars"><span class="sub">Run the test to see actual per-Pod counts.</span></div>
+          <div class="stats" id="realStats"></div>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="card">
+          <div class="head"><h2>Live cluster controls</h2><span class="eyebrow">Affects real resources</span></div>
+          <div class="ctl">
+            <div class="row"><div class="lab">Scale Deployment<small>Choose desired replica count</small></div><div class="stepper"><button data-live-scale="-1">−</button><output id="liveReplicaInput">5</output><button data-live-scale="1">+</button></div></div>
+            <button class="btn primary wide" id="applyLiveScale" data-apply-scale>Apply replica count</button>
+            <div class="shot" id="liveMessage">Live controls operate on deployment/lb-demo in namespace load-balancing.</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="head"><h2>Delete a Pod (self-healing)</h2></div>
+          <p class="sub">Choose a real application Pod. Kubernetes should create a replacement to restore the desired replica count.</p>
+          <select id="deletePodSelect" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);margin:10px 0"><option>Loading Pods…</option></select>
+          <button class="btn" id="deleteLivePod" data-delete-live>Delete selected Pod</button>
+        </div>
+        <div class="card">
+          <div class="head"><h2>What this proves</h2></div>
+          <ul class="clean"><li>The Deployment's desired and ready replica counts.</li><li>Which Pods are Ready and included as Service endpoints.</li><li>Real requests distributed through the ClusterIP Service.</li><li>Self-healing after deleting one application Pod.</li><li>Replica scaling from the dashboard.</li></ul>
+          <p class="sub">The Live demo tab remains a browser-only teaching simulation. This tab is the real cluster view.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMMANDS -->
+  <section id="commands" role="tabpanel" aria-labelledby="tab-commands" hidden>
+    <p class="notice">Commands below are adapted to your existing Docker Desktop cluster and <b>load-balancing</b> namespace. No Minikube setup is needed.</p>
+    <div class="card" style="margin-top:16px" id="steps"></div>
+  </section>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var URLX = "http://127.0.0.1:54327";
+  var PREFIX = "lb-demo-584d868764-";
+  var CH = "bcdfghjklmnpqrstvwxz2456789";
+  var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var rnd = function (n) { return Math.floor(Math.random() * n); };
+  var suffix = function () { var s = ""; for (var i = 0; i < 5; i++) s += CH[rnd(CH.length)]; return s; };
+  var esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+
+  /* ---------- simulation state ---------- */
+  var ipCounter = 3, born = 0;
+  var S = { replicas: 3, pods: [], reuse: false, affinity: false, sticky: null, sent: 0, failed: 0, running: false, lastHit: null, lastCmd: "", gone: 0 };
+  function newPod(phase) { var p = { id: "p" + (++born), born: born, suffix: suffix(), ip: "10.244.0." + ipCounter, phase: phase, hits: 0 }; ipCounter += 2; return p; }
+  for (var i = 0; i < 3; i++) S.pods.push(newPod("ready"));
+
+  var ready = function () { return S.pods.filter(function (p) { return p.phase === "ready"; }); };
+  var live = function () { return S.pods.filter(function (p) { return p.phase !== "terminating"; }); };
+  var byId = function (id) { return S.pods.filter(function (p) { return p.id === id; })[0]; };
+  var name = function (p) { return PREFIX + p.suffix; };
+
+  function terminate(p) {
+    p.phase = "terminating";
+    if (S.sticky === p) S.sticky = null;
+    setTimeout(function () { S.gone += p.hits; S.pods = S.pods.filter(function (x) { return x !== p; }); render(); }, 1000);
+  }
+  function reconcile() {
+    var a = live();
+    while (a.length < S.replicas) {
+      (function () {
+        var p = newPod("starting"); S.pods.push(p); a.push(p);
+        setTimeout(function () { if (S.pods.indexOf(p) > -1 && p.phase === "starting") { p.phase = "ready"; render(); } }, 1500);
+      })();
+    }
+    while (a.length > S.replicas) {
+      var victim = a.slice().sort(function (x, y) {
+        var rx = (x.phase === "ready") ? 1 : 0, ry = (y.phase === "ready") ? 1 : 0;
+        return rx - ry || y.born - x.born;
+      })[0];
+      terminate(victim); a = a.filter(function (x) { return x !== victim; });
+    }
+  }
+
+  /* ---------- terminal ---------- */
+  var term = $("#term");
+  function log(cmd, lines, note) {
+    var h = "";
+    if (cmd) { h += '<span class="p">PS C:\\k8s-lab&gt;</span> ' + esc(cmd) + "\n"; S.lastCmd = cmd; $("#lastCmd").textContent = cmd; }
+    (lines || []).forEach(function (l) { h += '<span class="o">' + esc(l) + "</span>\n"; });
+    if (note) h += '<span class="n">' + esc(note) + "</span>\n";
+    term.insertAdjacentHTML("beforeend", h + "\n");
+    while (term.childNodes.length > 400) term.removeChild(term.firstChild);
+    term.scrollTop = term.scrollHeight;
+  }
+  function tableText(map, total, failed) {
+    var out = ["Request Distribution:", "", "Name                           Value", "----                           -----"];
+    Object.keys(map).forEach(function (k) { out.push(k.padEnd(28) + String(map[k]).padStart(6)); });
+    out.push("", "Total successful responses: " + total);
+    if (failed) out.push("Failed requests: " + failed);
+    return out;
+  }
+
+  /* ---------- requests ---------- */
+  function pick() {
+    var r = ready();
+    if (!r.length) return null;
+    if ((S.reuse || S.affinity) && S.sticky && S.sticky.phase === "ready") return S.sticky;
+    var p = r[rnd(r.length)];
+    if (S.reuse || S.affinity) S.sticky = p;
+    return p;
+  }
+  function sendOne() {
+    var p = pick();
+    if (!p) { S.failed++; return null; }
+    p.hits++; S.sent++; S.lastHit = p.id; return p;
+  }
+  function single() {
+    var p = sendOne();
+    var cmd = S.reuse ? null : "curl.exe -s " + URLX;
+    if (!p) log(cmd, ["No ready pods behind the Service. The request failed."], "simulated");
+    else log(cmd, ["Hostname: " + name(p)], S.reuse ? "reused connection: the same pod answers while it stays ready" : "simulated");
+    render(); setTimeout(function () { S.lastHit = null; render(); }, 350);
+  }
+  function batch() {
+    if (S.running) return;
+    S.running = true; render();
+    var n = ready().length, got = {}, fails = 0, i = 0, total = 100;
+    var step = function () {
+      var p = sendOne();
+      if (p) got[name(p)] = (got[name(p)] || 0) + 1; else fails++;
+      i++;
+    };
+    var finish = function () {
+      S.running = false; S.lastHit = null;
+      var keys = {}; Object.keys(got).sort().forEach(function (k) { keys[k] = got[k]; });
+      var lines = tableText(keys, total - fails, fails);
+      if (n > 0) {
+        var sd = Math.sqrt(total * (1 / n) * (1 - 1 / n));
+        lines.push("", "Even split: " + (total / n).toFixed(1) + " each. Typical random spread: about ±" + sd.toFixed(1) + ".");
+      }
+      log(".\\tally.ps1 -Url " + URLX + " -Count 100", lines, S.reuse || S.affinity ? "client sticks to one pod in this mode" : "simulated");
+      render();
+    };
+    if (reduce) { while (i < total) step(); finish(); return; }
+    var t = setInterval(function () { for (var k = 0; k < 2 && i < total; k++) step(); render(); if (i >= total) { clearInterval(t); finish(); } }, 28);
+  }
+
+  /* ---------- render ---------- */
+  function render() {
+    var r = ready();
+    $("#epCount").textContent = r.length + " ready";
+    $("#repl").textContent = S.replicas;
+    $("#mNew").setAttribute("aria-pressed", String(!S.reuse));
+    $("#mReuse").setAttribute("aria-pressed", String(S.reuse));
+    $("#aff").checked = S.affinity;
+    $("#b1").disabled = S.running; $("#b100").disabled = S.running;
+    $("#pods").innerHTML = S.pods.map(function (p) {
+      var chip = { ready: "Ready", notready: "Not ready", starting: "Starting", terminating: "Terminating" }[p.phase];
+      var can = p.phase === "ready" || p.phase === "notready";
+      return '<div class="pod s-' + p.phase + (S.lastHit === p.id ? " hit" : "") + '">' +
+        '<div class="nm"><small>lb-demo-584d868764-</small>' + esc(p.suffix) + "</div>" +
+        '<span class="chip c-' + p.phase + '">' + chip + "</span>" +
+        '<div class="ip">' + p.ip + "</div>" +
+        '<div class="cnt">' + p.hits + "</div>" +
+        '<div class="acts"><button class="mini" data-act="del" data-id="' + p.id + '"' + (can ? "" : " disabled") + ">Delete</button>" +
+        '<button class="mini" data-act="tog" data-id="' + p.id + '"' + (can ? "" : " disabled") + ">" + (p.phase === "notready" ? "Mark ready" : "Not ready") + "</button></div></div>";
+    }).join("");
+    $("#eps").innerHTML = r.length ? r.map(function (p) { return '<span class="ep">' + p.ip + ":80</span>"; }).join("") : '<span class="empty">No endpoints. Requests fail.</span>';
+    var show = S.pods.filter(function (p) { return p.phase !== "terminating"; });
+    var maxv = Math.max.apply(null, [1].concat(show.map(function (p) { return p.hits; })));
+    var visTotal = show.reduce(function (a, p) { return a + p.hits; }, 0);
+    var even = visTotal / Math.max(1, show.length);
+    var scale = Math.max(maxv, even * 1.3, 1);
+    $("#bars").innerHTML = show.map(function (p) {
+      return '<div class="bar"><span class="lbl">…' + esc(p.suffix) + '</span><div class="track"><div class="fill" style="width:' + (p.hits / scale * 100) + '%"></div>' +
+        (visTotal ? '<div class="mark" style="left:' + Math.min(99, even / scale * 100) + '%"></div>' : "") + '</div><span class="val">' + p.hits + "</span></div>";
+    }).join("");
+    $("#stats").innerHTML = "<span>Sent <b>" + S.sent + "</b></span><span>Failed <b>" + S.failed + "</b></span><span>Ready pods <b>" + r.length + "</b></span>" +
+      (S.gone ? "<span>Removed pods answered <b>" + S.gone + "</b></span>" : "") + "<span>Counts add up until you press Reset.</span>";
+  }
+
+  /* ---------- events ---------- */
+  function copy(text, btn) {
+    var done = function () { if (btn) { var t = btn.textContent; btn.textContent = "Copied"; setTimeout(function () { btn.textContent = t; }, 1200); } };
+    var fallback = function () {
+      var ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); done(); } catch (e) { /* selection left for manual copy */ } document.body.removeChild(ta);
+    };
+    try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+  }
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest("[data-act],[data-tab],[data-copy]"); if (!t) return;
+    if (t.dataset.tab) { showTab(t.dataset.tab); return; }
+    if (t.dataset.copy) { copy(t.dataset.copy, t); return; }
+    var a = t.dataset.act, p;
+    if (a === "scale-up" || a === "scale-down") {
+      var v = Math.max(1, Math.min(8, S.replicas + (a === "scale-up" ? 1 : -1)));
+      if (v === S.replicas) return;
+      S.replicas = v; reconcile();
+      log("kubectl scale deployment lb-demo --replicas=" + v, ["deployment.apps/lb-demo scaled"], "simulated"); render();
+    } else if (a === "send1") single();
+    else if (a === "send100") batch();
+    else if (a === "reset") { S.pods.forEach(function (x) { x.hits = 0; }); S.sent = 0; S.failed = 0; S.gone = 0; render(); }
+    else if (a === "mode-new") { S.reuse = false; S.sticky = null; render(); }
+    else if (a === "mode-reuse") { S.reuse = true; S.sticky = null; render(); }
+    else if (a === "del") {
+      p = byId(t.dataset.id); if (!p) return;
+      terminate(p); reconcile();
+      log("kubectl delete pod " + name(p), ['pod "' + name(p) + '" deleted'], "simulated: the ReplicaSet creates a replacement"); render();
+    } else if (a === "tog") {
+      p = byId(t.dataset.id); if (!p) return;
+      if (p.phase === "ready") { p.phase = "notready"; if (S.sticky === p) S.sticky = null; log(null, ["Readiness probe failed on " + name(p) + "."], "simulated: pod removed from endpoints, no traffic reaches it"); }
+      else if (p.phase === "notready") { p.phase = "ready"; log(null, [name(p) + " is Ready again."], "simulated: pod added back to endpoints"); }
+      render();
+    } else if (a === "copy-last") { if (S.lastCmd) copy(S.lastCmd, t); }
+  });
+  $("#aff").addEventListener("change", function (e) { S.affinity = e.target.checked; S.sticky = null; render(); });
+
+  /* ---------- tabs ---------- */
+  var TABS = ["demo", "results", "commands"];
+  function showTab(id) {
+    if (TABS.indexOf(id) < 0) id = "demo";
+    TABS.forEach(function (t) { $("#" + t).hidden = t !== id; $("#tab-" + t).setAttribute("aria-selected", String(t === id)); });
+    try { if (location.hash !== "#" + id) history.replaceState(null, "", "#" + id); } catch (e) { /* hash optional */ }
+  }
+  window.addEventListener("hashchange", function () { showTab(location.hash.slice(1)); });
+
+  /* ---------- live Docker Desktop cluster ---------- */
+  var liveReplicaValue = 5, realResults = null;
+  function escLive(v) { return String(v == null ? "" : v).replace(/[&<>\"]/g, function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+  async function refreshLive() {
+    try {
+      var res = await fetch('/api/status', {cache:'no-store'}), d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Status request failed');
+      $('#liveDeployment').textContent = d.ready + ' / ' + d.desired;
+      $('#liveEndpoints').textContent = d.readyEndpoints;
+      $('#liveUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+      $('#livePods').innerHTML = '<tbody><tr><td>Pod</td><td>Status</td><td>Ready</td><td>IP</td><td>Node</td><td>Restarts</td></tr>' + d.pods.map(function(p){return '<tr><td class="mono">'+escLive(p.name)+'</td><td>'+escLive(p.status)+'</td><td>'+(p.ready?'<span class="chip c-ready">Ready</span>':'<span class="chip c-notready">Not Ready</span>')+'</td><td class="mono">'+escLive(p.ip)+'</td><td>'+escLive(p.node)+'</td><td>'+p.restarts+'</td></tr>';}).join('') + '</tbody>';
+      var sel = $('#deletePodSelect'), old = sel.value;
+      sel.innerHTML = d.pods.map(function(p){return '<option value="'+escLive(p.name)+'">'+escLive(p.name)+' · '+(p.ready?'Ready':'Not Ready')+'</option>';}).join('') || '<option value="">No application Pods</option>';
+      if (d.pods.some(function(p){return p.name===old;})) sel.value = old;
+      liveReplicaValue = Number(d.desired || 1); $('#liveReplicaInput').textContent = liveReplicaValue;
+    } catch(e) {
+      $('#liveUpdated').textContent = 'Connection error';
+      $('#livePods').innerHTML = '<tbody><tr><td>'+escLive(e.message)+'</td></tr></tbody>';
+    }
+  }
+  function renderRealResults(d) {
+    realResults = d;
+    var rows = Object.keys(d.counts || {}).sort().map(function(name){var n=d.counts[name], pct=d.successful? n/d.successful*100:0; return '<div class="bar"><span class="lbl" title="'+escLive(name)+'">'+escLive(name.slice(-8))+'</span><div class="track"><div class="fill" style="width:'+pct+'%"></div></div><span class="val">'+n+'</span></div>';}).join('');
+    $('#realBars').innerHTML = rows || '<span class="sub">No successful responses were counted.</span>';
+    $('#realStats').innerHTML = '<span>Successful <b>'+d.successful+'</b></span><span>Failed <b>'+d.failed+'</b></span><span>Requested <b>'+d.requested+'</b></span>';
+    $('#testStatus').textContent = 'Completed · actual cluster traffic';
+  }
+  document.addEventListener('click', async function(e){
+    var t=e.target.closest('[data-real-test],[data-clear-real],[data-live-scale],[data-apply-scale],[data-delete-live]'); if(!t)return;
+    if(t.hasAttribute('data-live-scale')) { liveReplicaValue=Math.max(1,Math.min(10,liveReplicaValue+Number(t.dataset.liveScale))); $('#liveReplicaInput').textContent=liveReplicaValue; return; }
+    if(t.hasAttribute('data-clear-real')) { realResults=null; $('#realBars').innerHTML='<span class="sub">Run the test to see actual per-Pod counts.</span>'; $('#realStats').innerHTML=''; $('#testStatus').textContent='Not run yet'; return; }
+    if(t.hasAttribute('data-real-test')) {
+      t.disabled=true; t.textContent='Running real requests…'; $('#testStatus').textContent='Testing inside cluster…';
+      try { var r=await fetch('/api/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({count:100})}); var d=await r.json(); if(!r.ok)throw new Error(d.error||'Test failed'); renderRealResults(d); }
+      catch(err){$('#testStatus').textContent='Test failed';$('#realBars').textContent=err.message;}
+      finally {t.disabled=false;t.textContent='Run 100 real requests';refreshLive();} return;
+    }
+    if(t.hasAttribute('data-apply-scale')) {
+      t.disabled=true; $('#liveMessage').textContent='Applying scale…';
+      try {var r=await fetch('/api/scale',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({replicas:liveReplicaValue})});var d=await r.json();if(!r.ok)throw new Error(d.error||'Scale failed');$('#liveMessage').textContent=d.message;setTimeout(refreshLive,1800);}
+      catch(err){$('#liveMessage').textContent=err.message;} finally{t.disabled=false;} return;
+    }
+    if(t.hasAttribute('data-delete-live')) {
+      var pod=$('#deletePodSelect').value;if(!pod)return;
+      if(!confirm('Delete this real Kubernetes Pod? The Deployment should create a replacement.\n\n'+pod))return;
+      t.disabled=true;$('#liveMessage').textContent='Deleting selected Pod…';
+      try {var r=await fetch('/api/delete-pod',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pod})});var d=await r.json();if(!r.ok)throw new Error(d.error||'Delete failed');$('#liveMessage').textContent=d.message;setTimeout(refreshLive,1200);}
+      catch(err){$('#liveMessage').textContent=err.message;} finally{t.disabled=false;} return;
+    }
+  });
+  var STEPS = [
+    ['Check cluster and namespace','Your current context is Docker Desktop.','kubectl config current-context\nkubectl get all -n load-balancing','Deployment, Pods and Service'],
+    ['View Pods and nodes','Shows Pod IPs and the worker node on which each Pod runs.','kubectl get pods -n load-balancing -o wide','Five application Pods'],
+    ['Inspect Service endpoints','Only Ready Pods should be listed as endpoints.','kubectl describe svc lb-demo-svc -n load-balancing\nkubectl get endpoints lb-demo-svc -n load-balancing','Service endpoints'],
+    ['Send 100 requests through the Service','The dashboard runs this test from a temporary curl Pod inside the namespace.','kubectl run lb-dashboard-test --restart=Never --image=curlimages/curl -n load-balancing --command -- sh -c "for i in $(seq 1 100); do curl -sS http://lb-demo-svc/; done"','Actual Hostname distribution'],
+    ['Scale to five replicas','Use the dashboard controls or this command.','kubectl scale deployment lb-demo --replicas=5 -n load-balancing\nkubectl get pods -n load-balancing','Five Ready replicas'],
+    ['Demonstrate self-healing','Delete one application Pod; the Deployment controller creates a replacement.','kubectl get pods -n load-balancing\nkubectl delete pod <pod-name> -n load-balancing\nkubectl get pods -n load-balancing -w','Old Pod disappears and replacement appears'],
+    ['Verify final state','Check the desired, ready and available replica counts.','kubectl get deployment lb-demo -n load-balancing\nkubectl get endpoints lb-demo-svc -n load-balancing','Deployment 5/5 and ready endpoints']
+  ];
+  $('#steps').innerHTML = STEPS.map(function(s,i){return '<div class="step"><div class="n">'+(i+1)+'</div><div><h3>'+esc(s[0])+'</h3>'+(s[1]?'<div class="shot">'+esc(s[1])+'</div>':'')+'<div class="code"><pre>'+esc(s[2])+'</pre><button class="cp" data-copy="'+esc(s[2])+'">Copy</button></div>'+(s[3]?'<div class="shot"><b>Screenshot:</b> '+esc(s[3])+'</div>':'')+'</div></div>';}).join('');
+  refreshLive(); setInterval(refreshLive,3000);
+
+  render();
+  log(null, ["Simulation initialized: 3 virtual Pods behind lb-demo-svc."], "browser-only simulation; use Our real run for live Kubernetes data");
+  showTab(location.hash.slice(1) || "demo");
+})();
+</script>
+
+</body></html>
